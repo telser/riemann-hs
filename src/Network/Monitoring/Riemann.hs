@@ -16,11 +16,12 @@ import Data.ProtocolBuffers
 import Data.Serialize.Put
 
 import Control.Applicative
-import Control.Monad
-import Control.Monad.IO.Class
-import Control.Error
+import qualified Control.Monad as CM
+import qualified Control.Monad.IO.Class as CMIC
+import qualified Control.Error as Error
+import Control.Monad.Trans.Either
 import Control.Lens
-import Control.Exception
+import qualified Control.Exception as Except
 
 import Network.Socket hiding (send, sendTo, recv, recvFrom)
 import Network.Socket.ByteString
@@ -118,31 +119,31 @@ type Port     = Int
 -- 'Port'. Failures are silently ignored---failure in monitoring
 -- should not cause an application failure...
 makeClient :: Hostname -> Port -> IO Client
-makeClient hn po = UDP . rightMay <$> sock
-  where sock :: IO (Either SomeException (Socket, AddrInfo))
+makeClient hn po = UDP . Error.rightMay <$> sock
+  where sock :: IO (Either Except.SomeException (Socket, AddrInfo))
         sock =
-          try $ do addrs <- getAddrInfo
-                            (Just $ defaultHints {
-                                addrFlags = [AI_NUMERICSERV] })
-                            (Just hn)
-                            (Just $ show po)
-                   case addrs of
-                     []       -> fail "No accessible addresses"
-                     (addy:_) -> do
-                       s <- socket (addrFamily addy)
-                                   Datagram
-                                   (addrProtocol addy)
-                       return (s, addy)
+          Except.try $ do addrs <- getAddrInfo
+                                   (Just $ defaultHints {
+                                       addrFlags = [AI_NUMERICSERV] })
+                                   (Just hn)
+                                   (Just $ show po)
+                          case addrs of
+                            []       -> fail "No accessible addresses"
+                            (addy:_) -> do
+                              s <- socket (addrFamily addy)
+                                          Datagram
+                                          (addrProtocol addy)
+                              return (s, addy)
 
 -- | Attempts to forward an event to a client. Fails silently.
-sendEvent :: MonadIO m => Client -> Event -> m ()
-sendEvent c = liftIO . void . runEitherT . sendEvent' c
+sendEvent :: CMIC.MonadIO m => Client -> Event -> m ()
+sendEvent c = CMIC.liftIO . CM.void . Error.runExceptT . sendEvent' c
 
 -- | Attempts to forward an event to a client. If it fails, it'll
 -- return an 'IOException' in the 'Either'.
-sendEvent' :: Client -> Event -> EitherT IOException IO ()
+sendEvent' :: Client -> Event -> Error.ExceptT Except.IOException IO ()
 sendEvent' (UDP Nothing)  _ = return ()
-sendEvent' (UDP (Just (s, addy))) e = tryIO $ do
+sendEvent' (UDP (Just (s, addy))) e = Error.tryIO $ do
   now <- fmap round getPOSIXTime
   let msg = def & events .~ [e & time ?~ now]
-  void $ sendTo s (runPut $ encodeMessage msg) (addrAddress addy)
+  CM.void $ sendTo s (runPut $ encodeMessage msg) (addrAddress addy)
