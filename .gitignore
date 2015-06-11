@@ -3,3 +3,5 @@ dist/
 dist_*/
 clj
 .hsenv_*
+.cabal-sandbox/
+cabal.sandbox.config
