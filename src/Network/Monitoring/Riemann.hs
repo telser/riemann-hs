@@ -20,9 +20,10 @@ import Control.Applicative
 import qualified Control.Monad as CM
 import qualified Control.Monad.IO.Class as CMIC
 import qualified Control.Error as Error
+import qualified Control.Monad.Trans.Except as Except
 import Control.Monad.Trans.Either
 import Control.Lens
-import qualified Control.Exception as Except
+import Control.Exception
 
 import Network.Socket hiding (send, sendTo, recv, recvFrom)
 import Network.Socket.ByteString
@@ -121,28 +122,28 @@ type Port     = Int
 -- should not cause an application failure...
 makeClient :: Hostname -> Port -> IO Client
 makeClient hn po = UDP . Error.rightMay <$> sock
-  where sock :: IO (Either Except.SomeException (Socket, AddrInfo))
+  where sock :: IO (Either SomeException (Socket, AddrInfo))
         sock =
-          Except.try $ do addrs <- getAddrInfo
-                                   (Just $ defaultHints {
-                                       addrFlags = [AI_NUMERICSERV] })
-                                   (Just hn)
-                                   (Just $ show po)
-                          case addrs of
-                            []       -> fail "No accessible addresses"
-                            (addy:_) -> do
-                              s <- socket (addrFamily addy)
-                                          Datagram
-                                          (addrProtocol addy)
-                              return (s, addy)
+          try $ do addrs <- getAddrInfo
+                            (Just $ defaultHints {
+                                addrFlags = [AI_NUMERICSERV] })
+                            (Just hn)
+                            (Just $ show po)
+                   case addrs of
+                     []       -> fail "No accessible addresses"
+                     (addy:_) -> do
+                       s <- socket (addrFamily addy)
+                                   Datagram
+                                   (addrProtocol addy)
+                       return (s, addy)
 
 -- | Attempts to forward an event to a client. Fails silently.
 sendEvent :: CMIC.MonadIO m => Client -> Event -> m ()
-sendEvent c = CMIC.liftIO . CM.void . Error.runExceptT . sendEvent' c
+sendEvent c = CMIC.liftIO . CM.void . runEitherT . sendEvent' c
 
 -- | Attempts to forward an event to a client. If it fails, it'll
 -- return an 'IOException' in the 'Either'.
-sendEvent' :: Client -> Event -> Error.ExceptT Except.IOException IO ()
+sendEvent' :: Client -> Event -> EitherT IOException IO ()
 sendEvent' (UDP Nothing)  _ = return ()
 sendEvent' (UDP (Just (s, addy))) e = Error.tryIO $ do
   now <- fmap round getPOSIXTime

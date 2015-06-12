@@ -1,8 +1,8 @@
 name:                riemann
-version:             0.1.0.0
+version:             0.1.0.1
 synopsis:            A Riemann client for Haskell
--- description:
-homepage:            https://github.com/tel/riemann-hs
+description:         Very simple event sending to a Riemann server.
+homepage:            https://github.com/telser/riemann-hs
 license:             MIT
 license-file:        LICENSE
 author:              Joseph Abrahamson, Trevis Elser
@@ -12,6 +12,11 @@ category:            Network
 build-type:          Simple
 cabal-version:       >=1.10
 
+
+source-repository head
+  type:     git
+  location: https://github.com/telser/riemann-hs/
+
 library
   hs-source-dirs:     src
   exposed-modules:
@@ -19,32 +24,35 @@ library
     Network.Monitoring.Riemann.Types
   other-modules:
   build-depends:
-                base              >= 4.8.0     && < 5.0,
-                network           >= 2.4.0.0,
-                text              >= 0.11.2.3,
-                containers        >= 0.4.2.0,
-                protobuf          >= 0.2,
-                either,
-                lens,
-                time,
-                errors,
-                data-default,
-                transformers,
-                cereal
+                base              >= 4.8.0     && < 5.0
+              , network           >= 2.4.0.0
+              , text              >= 0.11.2.3
+              , containers        >= 0.4.2.0
+              , protobuf          >= 0.2
+              , transformers      >= 0.4.3.0   && < 0.5
+              , either
+              , errors < 2.0
+              , lens
+              , time
+              , data-default
+              , cereal
   default-language:   Haskell2010
 
-test-suite doctest
-  type:            exitcode-stdio-1.0
-  ghc-options:     -threaded
-  hs-source-dirs:  test
-  main-is:         Doctest.hs
-  build-depends:
-                base,
-                directory,
-                either,
-                doctest,
-                filepath
-  default-language:   Haskell2010
+-- test-suite doctest
+--   type:            exitcode-stdio-1.0
+--   ghc-options:     -threaded
+--   hs-source-dirs:  test
+--   main-is:         Doctest.hs
+--   build-depends:
+--                 base
+--               , transformers      >= 0.4.3.0   && < 0.5
+--               , either
+--               , errors < 2.0
+--               , directory
+--               , either
+--               , doctest
+--               , filepath
+--   default-language:   Haskell2010
 
 test-suite property
   type:            exitcode-stdio-1.0
@@ -52,12 +60,14 @@ test-suite property
   hs-source-dirs:  test
   main-is:         Property.hs
   build-depends:
-                base,
-                either,
-                QuickCheck >= 2.5.1.0,
-                test-framework,
-                test-framework-quickcheck2,
-                riemann
+                base
+              , transformers      >= 0.4.3.0   && < 0.5
+              , either
+              , errors < 2.0
+              , QuickCheck >= 2.5.1.0
+              , test-framework
+              , test-framework-quickcheck2
+              , riemann
   default-language:   Haskell2010
 
 test-suite unit
@@ -66,9 +76,12 @@ test-suite unit
   hs-source-dirs:  test
   main-is:         Unit.hs
   build-depends:
-    base,
-    HUnit,
-    test-framework,
-    test-framework-hunit,
-    riemann
+                base
+              , transformers      >= 0.4.3.0   && < 0.5
+              , either
+              , errors < 2.0
+              , HUnit
+              , test-framework
+              , test-framework-hunit
+              , riemann
   default-language:   Haskell2010
