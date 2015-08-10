@@ -8,25 +8,27 @@ module Network.Monitoring.Riemann (
   {-, sendEvent'-}
   ) where
 
-import Network.Monitoring.Riemann.Types
+import           Network.Monitoring.Riemann.Types
 
-import Data.Int
-import Data.Default
-import Data.Time.Clock.POSIX
-import Data.ProtocolBuffers
-import Data.Serialize.Put
+import           Data.Default
+import           Data.Int
+import           Data.ProtocolBuffers
+import           Data.Serialize.Put
+import           Data.Time.Clock
+import           Data.Time.Clock.POSIX
 
-import Control.Applicative
-import qualified Control.Monad as CM
-import qualified Control.Monad.IO.Class as CMIC
-import qualified Control.Error as Error
-import qualified Control.Monad.Trans.Except as Except
-import Control.Monad.Trans.Either
-import Control.Lens
-import Control.Exception
+import           Control.Applicative
+import qualified Control.Error                    as Error
+import           Control.Exception
+import           Control.Lens
+import qualified Control.Monad                    as CM
+import qualified Control.Monad.IO.Class           as CMIC
+import           Control.Monad.Trans.Either
+import qualified Control.Monad.Trans.Except       as Except
 
-import Network.Socket hiding (send, sendTo, recv, recvFrom)
-import Network.Socket.ByteString
+import           Network.Socket                   hiding (recv, recvFrom, send,
+                                                   sendTo)
+import           Network.Socket.ByteString
 
 {-%
 
@@ -146,6 +148,7 @@ sendEvent c = CMIC.liftIO . CM.void . runEitherT . sendEvent' c
 sendEvent' :: Client -> Event -> EitherT IOException IO ()
 sendEvent' (UDP Nothing)  _ = return ()
 sendEvent' (UDP (Just (s, addy))) e = Error.tryIO $ do
-  now <- fmap round getPOSIXTime
+  current <- getCurrentTime
+  let now = round (utcTimeToPOSIXSeconds current)
   let msg = def & events .~ [e & time ?~ now]
   CM.void $ sendTo s (runPut $ encodeMessage msg) (addrAddress addy)
