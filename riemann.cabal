@@ -22,6 +22,7 @@ library
   exposed-modules:
     Network.Monitoring.Riemann
     Network.Monitoring.Riemann.Types
+    Network.Monitoring.Riemann.TCP
   other-modules:
   build-depends:
                 base              >= 4.8.0     && < 5.0
@@ -30,6 +31,9 @@ library
               , containers        >= 0.4.2.0
               , protobuf          >= 0.2
               , transformers      >= 0.4.3.0   && < 0.5
+              , async             >= 2.1
+              , bytestring        >= 0.10
+              , connection        >= 0.2
               , either
               , errors < 2.0
               , lens
